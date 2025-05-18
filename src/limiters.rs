@@ -1,9 +1,11 @@
 use std::task::{Context, Poll};
 use std::pin::Pin;
-use hyper::client::conn::http2::Connection;
+use hyper::rt::{Read, ReadBufCursor, Write};
+use hyper_util::client::legacy::connect::{Connection, Connected};
 use tokio::net::TcpStream;
 use tokio::io::{ReadBuf, AsyncWrite, AsyncRead};
 use async_speed_limit::{limiter::{Limiter, Consume}, clock::StandardClock};
+use futures_util::future::Future;
 use std::io::Error;
 use hyper::upgrade::Upgraded;
 
@@ -78,8 +80,7 @@ impl AsyncWrite for LimitedUpgraded {
 
 impl AsyncRead for LimitedUpgraded {
     fn poll_read(self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &mut ReadBuf<'_>,) -> Poll<Result<(), Error>> {
-        let io:Pin<&mut Upgraded> = Pin::new(&mut self.get_mut().io);
-        io.poll_read(cx, buf)
+        Pin::new(&mut self.get_mut()).poll_read(cx, buf)
     }
 }
 
